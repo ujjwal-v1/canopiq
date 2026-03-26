@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm -rf /Users/ujjwal/Desktop/canopiq/backend/app /Users/ujjwal/Desktop/canopiq/backend/alembic /Users/ujjwal/Desktop/canopiq/backend/alembic.ini /Users/ujjwal/Desktop/canopiq/backend/requirements.txt /Users/ujjwal/Desktop/canopiq/backend/tests/test_health.py /Users/ujjwal/Desktop/canopiq/backend/migrations)",
+      "Bash(rmdir /Users/ujjwal/Desktop/canopiq/backend/tests)"
+    ]
+  }
+}

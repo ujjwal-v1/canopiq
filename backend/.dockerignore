@@ -1,0 +1,13 @@
+.git
+.gitignore
+README.md
+app/
+alembic/
+tests/
+.env
+*.yml
+*.yaml
+__pycache__
+*.pyc
+.pytest_cache
+.ds_store
