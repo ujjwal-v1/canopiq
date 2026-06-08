@@ -1,6 +1,13 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 WORKDIR /app
-COPY package.json .
-RUN npm install
+COPY package*.json ./
+RUN npm ci
 COPY . .
-CMD ["npm", "run", "dev", "--", "--host"]
+RUN npm run build
+
+FROM nginx:alpine
+RUN apk add --no-cache gettext
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf.template /etc/nginx/templates/default.conf.template
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
