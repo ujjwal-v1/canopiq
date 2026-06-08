@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { Plant, DiaryEntry } from '../types'
 
-const api = axios.create({ baseURL: '/api/v1' })
+const api = axios.create({ baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api/v1` })
 
 export const plantApi = {
   list: () => api.get<Plant[]>('/plants/').then(r => r.data),

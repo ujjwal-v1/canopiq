@@ -1,18 +1,7 @@
 server {
-    listen ${PORT};
+    listen PORT_PLACEHOLDER;
     root /usr/share/nginx/html;
     index index.html;
-
-    location /api/ {
-        proxy_pass ${BACKEND_URL}/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /uploads/ {
-        proxy_pass ${BACKEND_URL}/uploads/;
-        proxy_set_header Host $host;
-    }
 
     location / {
         try_files $uri $uri/ /index.html;
