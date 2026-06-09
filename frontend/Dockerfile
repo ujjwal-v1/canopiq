@@ -12,6 +12,6 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/nginx.conf.template
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
-ENV PORT=80
-EXPOSE 80
+ENV PORT=3000
+EXPOSE 3000
 ENTRYPOINT ["/docker-entrypoint.sh"]
