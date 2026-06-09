@@ -4,9 +4,9 @@ import type { Plant, DiaryEntry } from '../types'
 const api = axios.create({ baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api/v1` })
 
 export const plantApi = {
-  list: () => api.get<Plant[]>('/plants/').then(r => r.data),
+  list: () => api.get<Plant[]>('/plants').then(r => r.data),
   create: (name: string, species?: string) =>
-    api.post<Plant>('/plants/', { name, species }).then(r => r.data),
+    api.post<Plant>('/plants', { name, species }).then(r => r.data),
   get: (id: string) => api.get<Plant>(`/plants/${id}`).then(r => r.data),
   analyze: (plantId: string, imageFile: File) => {
     const form = new FormData()
