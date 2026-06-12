@@ -16,14 +16,16 @@ import (
 )
 
 type PlantHandler struct {
-	plantService *services.PlantService
-	aiService    *services.AIService
+	plantService   *services.PlantService
+	aiService      *services.AIService
+	storageService *services.StorageService
 }
 
-func NewPlantHandler(plantService *services.PlantService, aiService *services.AIService) *PlantHandler {
+func NewPlantHandler(plantService *services.PlantService, aiService *services.AIService, storageService *services.StorageService) *PlantHandler {
 	return &PlantHandler{
-		plantService: plantService,
-		aiService:    aiService,
+		plantService:   plantService,
+		aiService:      aiService,
+		storageService: storageService,
 	}
 }
 
@@ -115,16 +117,21 @@ func (h *PlantHandler) AnalyzePlant(c *gin.Context) {
 	}
 
 	var imageURL *string
-	if config.Settings_Instance.StorageBackend == "local" {
+	if config.Settings_Instance.StorageBackend == "s3" {
+		url, err := h.storageService.UploadImage(c.Request.Context(), imageBytes, mediaType)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+			return
+		}
+		imageURL = &url
+	} else {
 		os.MkdirAll(config.Settings_Instance.StorageLocalPath, os.ModePerm)
 		filename := uuid.New().String() + ".jpg"
-		filepath := filepath.Join(config.Settings_Instance.StorageLocalPath, filename)
-
-		if err := os.WriteFile(filepath, imageBytes, 0644); err != nil {
+		localPath := filepath.Join(config.Settings_Instance.StorageLocalPath, filename)
+		if err := os.WriteFile(localPath, imageBytes, 0644); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save image"})
 			return
 		}
-
 		url := fmt.Sprintf("/uploads/%s", filename)
 		imageURL = &url
 	}
@@ -169,7 +176,22 @@ func RegisterRoutes(router *gin.Engine) error {
 		return fmt.Errorf("failed to initialize AI service: %w", err)
 	}
 
-	handler := NewPlantHandler(plantService, aiService)
+	var storageService *services.StorageService
+	if config.Settings_Instance.StorageBackend == "s3" {
+		cfg := config.Settings_Instance
+		storageService, err = services.NewStorageService(
+			cfg.S3Endpoint,
+			cfg.S3Bucket,
+			cfg.S3PublicURL,
+			cfg.AWSAccessKeyID,
+			cfg.AWSSecretAccessKey,
+		)
+		if err != nil {
+			return fmt.Errorf("failed to initialize storage service: %w", err)
+		}
+	}
+
+	handler := NewPlantHandler(plantService, aiService, storageService)
 
 	plants := router.Group("/api/v1/plants")
 	{
