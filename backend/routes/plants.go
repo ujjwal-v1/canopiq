@@ -2,6 +2,7 @@ package routes
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -120,7 +121,8 @@ func (h *PlantHandler) AnalyzePlant(c *gin.Context) {
 	if config.Settings_Instance.StorageBackend == "s3" {
 		url, err := h.storageService.UploadImage(c.Request.Context(), imageBytes, mediaType)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+			log.Printf("ERROR UploadImage plant_id=%s: %v", plantID, err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("Failed to upload image: %v", err)})
 			return
 		}
 		imageURL = &url
@@ -138,6 +140,7 @@ func (h *PlantHandler) AnalyzePlant(c *gin.Context) {
 
 	analysis, err := h.aiService.AnalyzePlantImage(imageBytes, mediaType)
 	if err != nil {
+		log.Printf("ERROR AnalyzePlant plant_id=%s: %v", plantID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("AI analysis failed: %v", err)})
 		return
 	}
