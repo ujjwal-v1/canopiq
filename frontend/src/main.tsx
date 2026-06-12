@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { ClerkProvider } from '@clerk/react'
+import { ClerkAxiosInterceptor } from './components/ClerkAxiosInterceptor'
 import App from './App'
 import './index.css'
 
@@ -10,9 +11,11 @@ const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ClerkProvider publishableKey={publishableKey} afterSignOutUrl="/">
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
+      <ClerkAxiosInterceptor>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ClerkAxiosInterceptor>
     </ClerkProvider>
   </React.StrictMode>
 )

@@ -16,8 +16,9 @@ func NewPlantService(db *gorm.DB) *PlantService {
 	return &PlantService{db: db}
 }
 
-func (s *PlantService) CreatePlant(data models.PlantCreateRequest) (*models.Plant, error) {
+func (s *PlantService) CreatePlant(data models.PlantCreateRequest, userID string) (*models.Plant, error) {
 	plant := &models.Plant{
+		UserID:  userID,
 		Name:    data.Name,
 		Species: data.Species,
 	}
@@ -29,17 +30,17 @@ func (s *PlantService) CreatePlant(data models.PlantCreateRequest) (*models.Plan
 	return plant, nil
 }
 
-func (s *PlantService) ListPlants() ([]models.Plant, error) {
+func (s *PlantService) ListPlants(userID string) ([]models.Plant, error) {
 	var plants []models.Plant
-	if err := s.db.Order("created_at DESC").Find(&plants).Error; err != nil {
+	if err := s.db.Where("user_id = ?", userID).Order("created_at DESC").Find(&plants).Error; err != nil {
 		return nil, err
 	}
 	return plants, nil
 }
 
-func (s *PlantService) GetPlant(plantID string) (*models.Plant, error) {
+func (s *PlantService) GetPlant(plantID string, userID string) (*models.Plant, error) {
 	var plant models.Plant
-	if err := s.db.Where("id = ?", plantID).First(&plant).Error; err != nil {
+	if err := s.db.Where("id = ? AND user_id = ?", plantID, userID).First(&plant).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return nil, nil
 		}
@@ -67,10 +68,8 @@ func (s *PlantService) AddDiaryEntry(plantID string, analysis AnalysisResult, im
 	}
 
 	if analysis.PlantType != "" {
-		plant, _ := s.GetPlant(plantID)
-		if plant != nil && plant.Species == nil {
-			s.db.Model(plant).Update("species", analysis.PlantType)
-		}
+		s.db.Model(&models.Plant{}).Where("id = ? AND species IS NULL", plantID).
+			Update("species", analysis.PlantType)
 	}
 
 	return entry, nil

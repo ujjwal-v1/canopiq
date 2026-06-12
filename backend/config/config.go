@@ -20,6 +20,7 @@ type Settings struct {
 	S3PublicURL        string
 	AWSAccessKeyID     string
 	AWSSecretAccessKey string
+	ClerkJWKSURL       string
 	Port               string
 }
 
@@ -46,6 +47,7 @@ func LoadSettings() *Settings {
 		S3PublicURL:        getEnv("S3_PUBLIC_URL", ""),
 		AWSAccessKeyID:     getEnv("AWS_ACCESS_KEY_ID", ""),
 		AWSSecretAccessKey: getEnv("AWS_SECRET_ACCESS_KEY", ""),
+		ClerkJWKSURL:       getEnv("CLERK_JWKS_URL", ""),
 		Port:               getEnv("PORT", "8000"),
 	}
 

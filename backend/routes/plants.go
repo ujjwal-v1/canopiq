@@ -9,6 +9,7 @@ import (
 
 	"canopiq/config"
 	"canopiq/db"
+	"canopiq/middleware"
 	"canopiq/models"
 	"canopiq/services"
 
@@ -16,13 +17,17 @@ import (
 	"github.com/google/uuid"
 )
 
+type AIAnalyzer interface {
+	AnalyzePlantImage(imageBytes []byte, mediaType string) (*services.AnalysisResult, error)
+}
+
 type PlantHandler struct {
 	plantService   *services.PlantService
-	aiService      *services.AIService
+	aiService      AIAnalyzer
 	storageService *services.StorageService
 }
 
-func NewPlantHandler(plantService *services.PlantService, aiService *services.AIService, storageService *services.StorageService) *PlantHandler {
+func NewPlantHandler(plantService *services.PlantService, aiService AIAnalyzer, storageService *services.StorageService) *PlantHandler {
 	return &PlantHandler{
 		plantService:   plantService,
 		aiService:      aiService,
@@ -32,13 +37,13 @@ func NewPlantHandler(plantService *services.PlantService, aiService *services.AI
 
 func (h *PlantHandler) CreatePlant(c *gin.Context) {
 	var req models.PlantCreateRequest
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	plant, err := h.plantService.CreatePlant(req)
+	userID := c.GetString("user_id")
+	plant, err := h.plantService.CreatePlant(req, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create plant"})
 		return
@@ -48,7 +53,8 @@ func (h *PlantHandler) CreatePlant(c *gin.Context) {
 }
 
 func (h *PlantHandler) ListPlants(c *gin.Context) {
-	plants, err := h.plantService.ListPlants()
+	userID := c.GetString("user_id")
+	plants, err := h.plantService.ListPlants(userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch plants"})
 		return
@@ -64,8 +70,9 @@ func (h *PlantHandler) ListPlants(c *gin.Context) {
 
 func (h *PlantHandler) GetPlant(c *gin.Context) {
 	plantID := c.Param("plant_id")
+	userID := c.GetString("user_id")
 
-	plant, err := h.plantService.GetPlant(plantID)
+	plant, err := h.plantService.GetPlant(plantID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch plant"})
 		return
@@ -81,8 +88,9 @@ func (h *PlantHandler) GetPlant(c *gin.Context) {
 
 func (h *PlantHandler) AnalyzePlant(c *gin.Context) {
 	plantID := c.Param("plant_id")
+	userID := c.GetString("user_id")
 
-	plant, err := h.plantService.GetPlant(plantID)
+	plant, err := h.plantService.GetPlant(plantID, userID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
 		return
@@ -156,6 +164,17 @@ func (h *PlantHandler) AnalyzePlant(c *gin.Context) {
 
 func (h *PlantHandler) GetDiary(c *gin.Context) {
 	plantID := c.Param("plant_id")
+	userID := c.GetString("user_id")
+
+	plant, err := h.plantService.GetPlant(plantID, userID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Database error"})
+		return
+	}
+	if plant == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Plant not found"})
+		return
+	}
 
 	entries, err := h.plantService.ListDiaryEntries(plantID)
 	if err != nil {
@@ -196,7 +215,7 @@ func RegisterRoutes(router *gin.Engine) error {
 
 	handler := NewPlantHandler(plantService, aiService, storageService)
 
-	plants := router.Group("/api/v1/plants")
+	plants := router.Group("/api/v1/plants", middleware.RequireAuth())
 	{
 		plants.POST("", handler.CreatePlant)
 		plants.GET("", handler.ListPlants)

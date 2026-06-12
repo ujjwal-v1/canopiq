@@ -28,6 +28,7 @@ func (hs *HealthStatus) Scan(value interface{}) error {
 
 type Plant struct {
 	ID        string    `gorm:"primaryKey;type:uuid;default:gen_random_uuid()" json:"id"`
+	UserID    string    `gorm:"type:varchar;not null;default:'';index" json:"-"`
 	Name      string    `gorm:"type:varchar(100);not null" json:"name"`
 	Species   *string   `gorm:"type:varchar(200)" json:"species"`
 	CreatedAt time.Time `gorm:"autoCreateTime" json:"created_at"`

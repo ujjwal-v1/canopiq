@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from '@clerk/react'
 import Layout from './components/Layout'
@@ -5,7 +6,7 @@ import DashboardPage from './pages/DashboardPage'
 import PlantPage from './pages/PlantPage'
 import NewPlantPage from './pages/NewPlantPage'
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isSignedIn, isLoaded } = useAuth()
   if (!isLoaded) return null
   if (!isSignedIn) return <Navigate to="/" replace />

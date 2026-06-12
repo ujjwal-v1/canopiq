@@ -3,6 +3,20 @@ import type { Plant, DiaryEntry } from '../types'
 
 const api = axios.create({ baseURL: `${import.meta.env.VITE_API_URL ?? ''}/api/v1` })
 
+let _getToken: (() => Promise<string | null>) | null = null
+
+export function configureAuth(fn: () => Promise<string | null>) {
+  _getToken = fn
+}
+
+api.interceptors.request.use(async (config) => {
+  if (_getToken) {
+    const token = await _getToken()
+    if (token) config.headers.set('Authorization', `Bearer ${token}`)
+  }
+  return config
+})
+
 export const plantApi = {
   list: () => api.get<Plant[]>('/plants').then(r => r.data),
   create: (name: string, species?: string) =>

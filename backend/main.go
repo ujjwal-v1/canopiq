@@ -5,6 +5,7 @@ import (
 
 	"canopiq/config"
 	"canopiq/db"
+	"canopiq/middleware"
 	"canopiq/routes"
 
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,12 @@ func main() {
 		log.Fatalf("Database initialization failed: %v", err)
 	}
 	defer db.Close()
+
+	if cfg.ClerkJWKSURL != "" {
+		if err := middleware.InitJWKS(cfg.ClerkJWKSURL); err != nil {
+			log.Fatalf("Failed to initialize JWKS: %v", err)
+		}
+	}
 
 	router := gin.Default()
 
