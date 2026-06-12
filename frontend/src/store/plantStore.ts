@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import axios from 'axios'
 import type { Plant, DiaryEntry } from '../types'
 import { plantApi } from '../services/api'
 
@@ -49,9 +50,12 @@ export const usePlantStore = create<PlantStore>((set, get) => ({
       const entry = await plantApi.analyze(plantId, file)
       set(s => ({ diary: [entry, ...s.diary] }))
       return entry
-    } catch {
-      set({ error: 'Analysis failed. Please try again.' })
-      throw new Error('Analysis failed')
+    } catch (err) {
+      const msg = axios.isAxiosError(err)
+        ? err.response?.data?.error ?? 'Analysis failed. Please try again.'
+        : 'Analysis failed. Please try again.'
+      set({ error: msg })
+      throw new Error(msg)
     } finally {
       set({ loading: false })
     }

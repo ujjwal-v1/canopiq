@@ -4,6 +4,7 @@ import { usePlantStore } from '../store/plantStore'
 import UploadZone from '../components/UploadZone'
 import DiaryEntryCard from '../components/DiaryEntryCard'
 import HealthBadge from '../components/HealthBadge'
+import HealthTrendChart from '../components/HealthTrendChart'
 import Spinner from '../components/Spinner'
 import type { DiaryEntry } from '../types'
 
@@ -123,6 +124,8 @@ export default function PlantPage() {
           <p className="text-sm mt-2 leading-relaxed">{latestEntry.overall_condition}</p>
         </div>
       )}
+
+      {diary.length >= 2 && <HealthTrendChart entries={diary} />}
 
       {/* Diary */}
       <div>
