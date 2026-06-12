@@ -12,9 +12,11 @@ import (
 )
 
 const analysisPrompt = `You are an expert botanist and plant health specialist.
-Analyze this plant photo carefully and respond ONLY in this exact JSON format,
-no markdown, no preamble:
+First, determine whether the image contains a plant (including leaves, flowers, trees, succulents, herbs, or any vegetation).
+If the image does NOT contain a plant, respond with exactly:
+{"error": "no_plant_detected"}
 
+If it does contain a plant, respond ONLY in this exact JSON format, no markdown, no preamble:
 {
   "plantType": "identified plant species or type",
   "healthStatus": "Good" | "Fair" | "Poor",
@@ -150,6 +152,13 @@ func (s *AIService) AnalyzePlantImage(imageBytes []byte, mediaType string) (*Ana
 
 	rawText := data.Candidates[0].Content.Parts[0].Text
 	rawText = stripMarkdownFences(rawText)
+
+	var errResp struct {
+		Error string `json:"error"`
+	}
+	if json.Unmarshal([]byte(rawText), &errResp) == nil && errResp.Error == "no_plant_detected" {
+		return nil, fmt.Errorf("no_plant_detected")
+	}
 
 	var result AnalysisResult
 	if err := json.Unmarshal([]byte(rawText), &result); err != nil {

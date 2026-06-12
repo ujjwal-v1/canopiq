@@ -148,6 +148,10 @@ func (h *PlantHandler) AnalyzePlant(c *gin.Context) {
 
 	analysis, err := h.aiService.AnalyzePlantImage(imageBytes, mediaType)
 	if err != nil {
+		if err.Error() == "no_plant_detected" {
+			c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "No plant detected in the image. Please upload a photo of a plant."})
+			return
+		}
 		log.Printf("ERROR AnalyzePlant plant_id=%s: %v", plantID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("AI analysis failed: %v", err)})
 		return
