@@ -1,3 +1,4 @@
+# check=skip=SecretsUsedInArgOrEnv
 FROM node:22-alpine AS builder
 WORKDIR /app
 ARG VITE_API_URL

@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/react'
+import { UserButton, useAuth } from '@clerk/react'
 
 export default function Layout() {
   const navigate = useNavigate()
@@ -20,26 +20,6 @@ export default function Layout() {
         </NavLink>
 
         <div className="flex items-center gap-3">
-          {isLoaded && !isSignedIn && (
-            <>
-              <SignInButton mode="modal">
-                <button
-                  className="px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90"
-                  style={{ color: 'var(--muted)' }}
-                >
-                  Sign in
-                </button>
-              </SignInButton>
-              <SignUpButton mode="modal">
-                <button
-                  className="px-4 py-2 rounded-xl text-sm font-medium transition-all hover:opacity-90 active:scale-95"
-                  style={{ background: 'var(--accent)', color: '#fff' }}
-                >
-                  Sign up
-                </button>
-              </SignUpButton>
-            </>
-          )}
           {isLoaded && isSignedIn && (
             <>
               <button
