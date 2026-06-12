@@ -3,72 +3,99 @@
 ## System Design
 
 ```
-Phone (Browser PWA)
-        │  multipart/form-data (image)
+Browser (React SPA)
+        │  multipart/form-data (image) + Bearer JWT
         ▼
-  FastAPI Backend  ──► Anthropic Claude Vision API
+  Go / Gin Backend  ──► Gemini 2.5 Flash Lite (Vision)
         │                       │
         │  AnalysisResult JSON  │
         ◄───────────────────────┘
         │
-        ▼
-  PostgreSQL DB
-  (Plants + DiaryEntries)
+        ├──► PostgreSQL (Plants + DiaryEntries, scoped by user_id)
         │
-  Local/S3 Storage
-  (raw images)
+        └──► Cloudflare R2 (image storage, S3-compatible)
+
+Auth flow:
+  Browser ──► Clerk (sign-in) ──► JWT
+  JWT sent on every request via Authorization: Bearer
+  Go middleware validates JWT against Clerk's JWKS endpoint
 ```
 
 ## Key Design Decisions
 
-### Why FastAPI?
-- Async-first: non-blocking image upload + Claude API call
-- Auto-generated Swagger docs at `/docs`
-- Pydantic models shared between schemas and validation
+### Why Gin (Go) over FastAPI (Python)?
+- Single compiled binary — no runtime, faster cold start (~100ms vs ~2-3s)
+- Lower memory footprint (~50MB vs ~200MB)
+- Type safety without a separate schema layer
+
+### Why Clerk for auth?
+- Handles OAuth, magic links, MFA out of the box
+- JWT validation via JWKS — no user table or session storage needed
+- `user_id` is just the JWT `sub` claim, used as a filter on every DB query
+
+### Why Cloudflare R2 for storage?
+- S3-compatible API — drop-in with the AWS SDK
+- Free tier: 10GB storage, 1M writes, 10M reads/month
+- Images survive backend redeployments (Railway's filesystem is ephemeral)
+- `STORAGE_BACKEND=local` fallback keeps local dev zero-config
 
 ### Why Zustand over Redux?
-- Much lower boilerplate for a focused app
-- Async actions built-in without middleware
-- Easy to scale as state grows
+- Minimal boilerplate for a focused app
+- Async actions without middleware
+- Easy to extend as state grows
 
-### Why store images locally (Phase 1)?
-- Zero config to get started
-- Swap `STORAGE_BACKEND=s3` in .env to migrate to S3/R2 in Phase 5 — service layer abstracts this
+## Database Schema
 
-### Database schema
 ```
 plants
   id          UUID PK
+  user_id     VARCHAR NOT NULL INDEX   ← scopes all queries per Clerk user
   name        VARCHAR(100)
-  species     VARCHAR(200)   ← AI-populated on first analysis
+  species     VARCHAR(200)             ← AI-populated on first analysis
   created_at  TIMESTAMP
+  updated_at  TIMESTAMP
 
 diary_entries
-  id              UUID PK
-  plant_id        FK → plants.id
-  image_url       VARCHAR
-  health_status   ENUM(Good, Fair, Poor)
+  id                UUID PK
+  plant_id          FK → plants.id (CASCADE DELETE)
+  image_url         VARCHAR             ← R2 public URL or local path
+  health_status     VARCHAR(50)         ← Good | Fair | Poor
   overall_condition TEXT
-  deficiencies    TEXT  (JSON array)
-  tips            TEXT  (JSON array)
-  diary_note      TEXT
-  created_at      TIMESTAMP
+  deficiencies      JSONB
+  tips              JSONB
+  diary_note        TEXT
+  created_at        TIMESTAMP
 ```
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /api/v1/plants/ | Create plant |
-| GET  | /api/v1/plants/ | List all plants |
-| GET  | /api/v1/plants/:id | Get single plant |
-| POST | /api/v1/plants/:id/analyze | Upload image → AI diagnosis → diary entry |
-| GET  | /api/v1/plants/:id/diary | Get diary entries |
-| GET  | /health | Health check |
+All plant routes require `Authorization: Bearer <clerk-jwt>`.
 
-## Adding Features
+| Method | Path                            | Description                            |
+|--------|---------------------------------|----------------------------------------|
+| GET    | /health                         | Health check (unauthenticated)         |
+| POST   | /api/v1/plants                  | Create plant                           |
+| GET    | /api/v1/plants                  | List plants (current user only)        |
+| GET    | /api/v1/plants/:id              | Get single plant                       |
+| POST   | /api/v1/plants/:id/analyze      | Upload image → AI diagnosis → diary    |
+| GET    | /api/v1/plants/:id/diary        | Get diary entries                      |
 
-- **Auth**: Add `user_id` FK to `plants`. Use `python-jose` for JWT (already in requirements).
-- **S3 storage**: In `plants.py` endpoint, branch on `settings.STORAGE_BACKEND == "s3"` and use `boto3`.
-- **Health trend chart**: Query `diary_entries` ordered by `created_at`, map `health_status` to numeric score (Good=3, Fair=2, Poor=1), render with Recharts.
-- **Push notifications**: Add a `reminders` table. Use a background task queue (e.g. ARQ with Redis) to fire web push.
+## Frontend Components
+
+```
+src/
+├── pages/
+│   ├── LandingPage.tsx        # Shown to unauthenticated visitors
+│   ├── DashboardPage.tsx      # Plant list (signed-in)
+│   ├── PlantPage.tsx          # Plant detail + upload + diary + trend chart
+│   └── NewPlantPage.tsx       # Create plant form
+├── components/
+│   ├── HealthTrendChart.tsx   # Recharts line chart (Good/Fair/Poor over time)
+│   ├── HealthBadge.tsx        # Coloured status pill
+│   ├── DiaryEntryCard.tsx     # Single diary entry
+│   ├── UploadZone.tsx         # Drag-and-drop / file picker
+│   ├── Layout.tsx             # Shell with nav + UserButton
+│   └── ClerkAxiosInterceptor  # Attaches JWT to every Axios request
+└── services/
+    └── api.ts                 # Axios client + plantApi methods
+```

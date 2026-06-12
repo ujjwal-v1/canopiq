@@ -3,57 +3,51 @@
 ## Current State (as of June 2026)
 
 - [x] Go/Gin backend deployed on Railway
-- [x] React/TypeScript frontend deployed on Railway  
+- [x] React/TypeScript frontend deployed on Railway
 - [x] PostgreSQL database (Railway addon)
 - [x] Gemini AI vision analysis working end-to-end
 - [x] Multi-plant support (create, view, diary)
 - [x] Photo upload → AI diagnosis → diary entry
 - [x] Docker multi-stage production build
 - [x] GitHub Actions CI/CD pipeline
+- [x] Cloudflare R2 persistent image storage
+- [x] Clerk authentication (per-user plant data, JWT middleware)
+- [x] Health trend chart (Recharts, Good/Fair/Poor over time)
 
 ---
 
 ## Phase 2 — Make It Real
 
-### 2A · Persistent Image Storage (Cloudflare R2)
+### 2A · Persistent Image Storage (Cloudflare R2) ✅
 > Uploaded photos are lost on every Railway redeploy. R2 is free and S3-compatible.
 
-- [ ] Create Cloudflare account + R2 bucket
-- [ ] Add R2 credentials to Railway backend env vars:
-  - `STORAGE_BACKEND=s3`
-  - `S3_BUCKET=canopiq-uploads`
-  - `S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com`
-  - `AWS_ACCESS_KEY_ID=<r2-key>`
-  - `AWS_SECRET_ACCESS_KEY=<r2-secret>`
-- [ ] Implement S3 upload in `backend/services/storage_service.go`
-- [ ] Update `routes/plants.go` to call storage service on analyze
-- [ ] Update `STORAGE_LOCAL_PATH` fallback for local dev
-- [ ] Test: upload photo → verify image persists after backend redeploy
+- [x] Create Cloudflare account + R2 bucket
+- [x] Add R2 credentials to Railway backend env vars
+- [x] Implement S3 upload in `backend/services/storage_service.go`
+- [x] Update `routes/plants.go` to call storage service on analyze
+- [x] `STORAGE_LOCAL_PATH` fallback for local dev
 
-### 2B · Authentication (Clerk)
+### 2B · Authentication (Clerk) ✅
 > Without auth, all plants are visible to every visitor.
 
-- [ ] Create Clerk account, create application
-- [ ] Add Clerk publishable key to Railway frontend env: `VITE_CLERK_PUBLISHABLE_KEY`
-- [ ] `cd frontend && npm install @clerk/clerk-react`
-- [ ] Wrap `App.tsx` with `<ClerkProvider>`
-- [ ] Add `<SignIn />` / `<SignUp />` pages
-- [ ] Protect routes with `<SignedIn>` / `<SignedOut>` guards
-- [ ] Pass Clerk JWT to backend via `Authorization: Bearer <token>` header
-- [ ] Add JWT middleware to Go backend (validate Clerk tokens)
-- [ ] Add `user_id` column to `plants` table, filter all queries by user
-- [ ] Test: two separate accounts see separate plant collections
+- [x] Create Clerk account, create application
+- [x] Add Clerk publishable key to Railway frontend env: `VITE_CLERK_PUBLISHABLE_KEY`
+- [x] `cd frontend && npm install @clerk/clerk-react`
+- [x] Wrap `App.tsx` with `<ClerkProvider>`
+- [x] Protect routes with `<SignedIn>` / `<SignedOut>` guards + `LandingPage`
+- [x] Pass Clerk JWT to backend via `Authorization: Bearer <token>` header
+- [x] Add JWT middleware to Go backend (validate Clerk tokens via JWKS)
+- [x] Add `user_id` column to `plants` table, filter all queries by user
 
-### 2C · Health Trend Chart
+### 2C · Health Trend Chart ✅
 > Visualize Good/Fair/Poor history per plant over time.
 
-- [ ] `cd frontend && npm install recharts`
-- [ ] Add health score mapping: `Good=3, Fair=2, Poor=1`
-- [ ] Create `HealthTrendChart.tsx` component using Recharts `LineChart`
-- [ ] Add chart to `PlantPage.tsx` above the diary section
-- [ ] Show last 10 diary entries on X-axis (date), health score on Y-axis
-- [ ] Color-code line: green for ≥2.5, yellow for ≥1.5, red for <1.5
-- [ ] Test: multiple analyses show trend line updating
+- [x] `cd frontend && npm install recharts`
+- [x] Add health score mapping: `Good=3, Fair=2, Poor=1`
+- [x] Create `HealthTrendChart.tsx` component using Recharts `LineChart`
+- [x] Add chart to `PlantPage.tsx` above the diary section
+- [x] Show last 10 diary entries on X-axis (date), health score on Y-axis
+- [x] Color-code line: green for ≥2.5, yellow for ≥1.5, red for <1.5
 
 ---
 
