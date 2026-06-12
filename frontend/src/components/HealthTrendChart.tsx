@@ -38,7 +38,7 @@ export default function HealthTrendChart({ entries }: { entries: DiaryEntry[] })
             tickLine={false}
           />
           <Tooltip
-            formatter={(value) => [labelMap[Number(value)] ?? value, 'Health']}
+            formatter={(value: unknown) => [labelMap[Number(value)] ?? String(value ?? ''), 'Health']}
             contentStyle={{
               background: 'var(--surface2)',
               border: '1px solid var(--border)',
