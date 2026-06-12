@@ -32,7 +32,7 @@ export default function HealthTrendChart({ entries }: { entries: DiaryEntry[] })
           <YAxis
             domain={[1, 3]}
             ticks={[1, 2, 3]}
-            tickFormatter={v => labelMap[v] ?? ''}
+            tickFormatter={(v: number) => labelMap[v] ?? ''}
             tick={{ fontSize: 11, fill: 'var(--muted)' }}
             axisLine={false}
             tickLine={false}
